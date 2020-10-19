@@ -14,8 +14,8 @@ def maybe_raise_exception(future):
 
 def split_connection_host_port(value):
     parts = value.split(':')
-    LOGGER.debug('Returning %r', (parts[0], int(parts[1])))
-    return parts[0], int(parts[1])
+    LOGGER.debug('Returning %r', (parts[0], int(parts[1].split('@')[0])))
+    return parts[0], int(parts[1].split('@')[0])
 
 
 def parse_info_value(value):
