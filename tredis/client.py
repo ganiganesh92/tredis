@@ -422,6 +422,33 @@ class Client(server.ServerMixin, keys.KeysMixin, strings.StringsMixin,
         else:
             raise ValueError('Unsupported type: {0}'.format(type(value)))
 
+    def _get_encode_data(self, value):
+        """Dynamically build the RESP payload based upon the list provided.
+
+        :param mixed value: The list of command parts to encode
+        :rtype: bytes
+
+        """
+        if isinstance(value, bytes):
+            return b''.join(
+                [b'$',
+                 ascii(len(value)).encode('ascii'), CRLF, value, CRLF])
+        elif isinstance(value, str):  # pragma: nocover
+            return value.encode('utf-8')
+        elif isinstance(value, int):
+            return self._encode_resp(ascii(value).encode('ascii'))
+        elif isinstance(value, float):
+            return self._encode_resp(ascii(value).encode('ascii'))
+        elif isinstance(value, list):
+            output = [b'*', ascii(len(value)).encode('ascii'), CRLF]
+            for item in value:
+                output.append(self._encode_resp(item))
+            return b''.join(output)
+        else:
+            raise ValueError('Unsupported type: {0}'.format(type(value)))
+       
+            
+            
     @staticmethod
     def _eval_expectation(command, response, future):
         """Evaluate the response from Redis to see if it matches the expected
@@ -677,7 +704,7 @@ class Client(server.ServerMixin, keys.KeysMixin, strings.StringsMixin,
         :rtype: tredis.client._Connection
 
         """
-        crc = crc16.crc16(self._encode_resp(value[1])) % HASH_SLOTS
+        crc = crc16.crc16(self._get_encode_data(value[1])) % HASH_SLOTS
         for host in self._cluster.keys():
             for slot in self._cluster[host].slots:
                 if slot[0] <= crc <= slot[1]:
